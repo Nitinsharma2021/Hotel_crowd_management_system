@@ -1,0 +1,156 @@
+service: restaurant-reservation-system
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    CUSTOMERS_TABLE: ${self:service}-customers-${opt:stage, self:provider.stage}
+    RESTAURANTS_TABLE: ${self:service}-restaurants-${opt:stage, self:provider.stage}
+    TABLES_TABLE: ${self:service}-tables-${opt:stage, self:provider.stage}
+    RESERVATIONS_TABLE: ${self:service}-reservations-${opt:stage, self:provider.stage}
+    REQUESTS_TABLE: ${self:service}-requests-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-*"
+    - Effect: Allow
+      Action:
+        - bedrock:InvokeModel
+      Resource: "*"
+
+functions:
+  # AI Agent for table management
+  aiAgent:
+    handler: handlers/aiAgent.handler
+    events:
+      - http:
+          path: /ai-agent
+          method: post
+          cors: true
+
+  # Customer management
+  createCustomer:
+    handler: handlers/customers.create
+    events:
+      - http:
+          path: /customers
+          method: post
+          cors: true
+
+  getCustomer:
+    handler: handlers/customers.get
+    events:
+      - http:
+          path: /customers/{id}
+          method: get
+          cors: true
+
+  updateCustomer:
+    handler: handlers/customers.update
+    events:
+      - http:
+          path: /customers/{id}
+          method: put
+          cors: true
+
+  # Restaurant management
+  createRestaurant:
+    handler: handlers/restaurants.create
+    events:
+      - http:
+          path: /restaurants
+          method: post
+          cors: true
+
+  getRestaurant:
+    handler: handlers/restaurants.get
+    events:
+      - http:
+          path: /restaurants/{id}
+          method: get
+          cors: true
+
+  # Table management
+  createTable:
+    handler: handlers/tables.create
+    events:
+      - http:
+          path: /tables
+          method: post
+          cors: true
+
+  getTables:
+    handler: handlers/tables.list
+    events:
+      - http:
+          path: /tables
+          method: get
+          cors: true
+
+  # Reservation management
+  createReservation:
+    handler: handlers/reservations.create
+    events:
+      - http:
+          path: /reservations
+          method: post
+          cors: true
+
+  getReservation:
+    handler: handlers/reservations.get
+    events:
+      - http:
+          path: /reservations/{id}
+          method: get
+          cors: true
+
+  updateReservation:
+    handler: handlers/reservations.update
+    events:
+      - http:
+          path: /reservations/{id}
+          method: put
+          cors: true
+
+  cancelReservation:
+    handler: handlers/reservations.cancel
+    events:
+      - http:
+          path: /reservations/{id}/cancel
+          method: post
+          cors: true
+
+  getAvailableTables:
+    handler: handlers/reservations.getAvailableTables
+    events:
+      - http:
+          path: /reservations/available-tables
+          method: get
+          cors: true
+
+  # Special requests
+  createRequest:
+    handler: handlers/requests.create
+    events:
+      - http:
+          path: /requests
+          method: post
+          cors: true
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+    lambdaPort: 3002 
